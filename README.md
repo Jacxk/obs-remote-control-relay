@@ -1,20 +1,26 @@
 # OBS Remote Control Relay
 
-Server you can use (hosted in Tokyo): https://moblin.mys-lang.org/obs-remote-control-relay
+A minimal Go-based OBS relay that lets you control OBS remotely, without exposing your home IP, through websockets.
 
 <img src="screenshot.png">
 
-# Cloud service
+#
+Servers you can use if you dont want to self-host:
+- (Hosted in Tokyo): https://moblin.mys-lang.org/obs-remote-control-relay
+- (Hosted in USA): https://obs-relay.jackscode.me
+#
 
-A simple Go program serves a simple website and websocket endpoints.
+## How to run
 
-## Docker
+**Disclaimer:** It is strongly recommended to run the relay using secure protocols (HTTPS for the web interface and WSS for websockets). Running without encryption may expose sensitive information or make your connection vulnerable to interception.
+
+### Docker
 
 Pull image from repository:
 ```bash
-docker pull ghcr.io/eerimoq/obs-remote-control-relay:latest
+docker pull ghcr.io/jacxk/obs-remote-control-relay:dev
 
-docker run --rm -p 8080:8080 ghcr.io/eerimoq/obs-remote-control-relay
+docker run --rm -p 8080:8080 ghcr.io/jacxk/obs-remote-control-relay
 ```
 
 ### Docker Compose
@@ -22,7 +28,7 @@ docker run --rm -p 8080:8080 ghcr.io/eerimoq/obs-remote-control-relay
 ```yaml
 services:
   obs-relay:
-    image: ghcr.io/eerimoq/obs-remote-control-relay:latest
+    image: ghcr.io/jacxk/obs-remote-control-relay:dev
     ports:
       - "8080:8080"
     environment:
@@ -33,7 +39,7 @@ services:
 ```
 
 
-## Systemd (no Docker)
+### Systemd (no Docker)
 
 Run the Go program as a systemd service and use Nginx for TLS.
 
@@ -41,7 +47,7 @@ Run the Go program as a systemd service and use Nginx for TLS.
 cd backend && go build
 ```
 
-## Systemd service
+### Systemd service
 
 /etc/systemd/system/obs-remote-control-relay.service
 
