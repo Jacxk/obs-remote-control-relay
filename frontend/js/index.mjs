@@ -1,270 +1,50 @@
+import Obs from "./classes/Obs.mjs";
+import Relay from "./classes/Relay.mjs";
 import {
-  wsScheme,
-  timeAgoString,
-  getTableBody,
-  appendToRow,
-  bitrateToString,
-  httpScheme,
   addOnClick,
+  appendToRow,
+  baseUrl,
+  bitrateToString,
+  getTableBody,
+  httpScheme,
   randomUUID,
+  timeAgoString,
+  wsScheme,
 } from "./utils.mjs";
-import { baseUrl } from "./config.mjs";
 
-const relayStatusConnecting = "Connecting...";
-const relayStatusConnected = "Connected";
-const relayStatusKicked = "Kicked";
+export const RelayStatus = {
+  Connecting: "Connecting...",
+  Connected: "Connected",
+  Kicked: "Kicked",
+};
 
-const obsStatusConnecting = "Connecting...";
-const obsStatusConnected = "Connected";
+export const ObsStatus = {
+  Connecting: "Connecting...",
+  Connected: "Connected",
+};
 
-const connectionStatusConnectingToRelay = "Connecting to Relay...";
-const connectionStatusConnectingToObs = "Connecting to OBS on this computer...";
-const connectionStatusObsClosed = "OBS connection closed";
-const connectionStatusObsError = "OBS connection error";
-const connectionStatusConnected = "Connected";
-const connectionStatusRemoteControllerClosed =
-  "Remote controller connection closed";
-const connectionStatusRemoteControllerError =
-  "Remote controller connection error";
-const connectionStatusRateLimitExceeded = "Rate limit exceeded";
+export const ConnectionStatus = {
+  ConnectingToRelay: "Connecting to Relay...",
+  ConnectingToObs: "Connecting to OBS on this computer...",
+  ObsClosed: "OBS connection closed",
+  ObsError: "OBS connection error",
+  Connected: "Connected",
+  RemoteControllerClosed: "Remote controller connection closed",
+  RemoteControllerError: "Remote controller connection error",
+  RateLimitExceeded: "Rate limit exceeded",
+};
 
 const defaultObsPort = "4455";
 
-let bridgeId = undefined;
-let obsPort = undefined;
-let timerId = undefined;
-let textEncoder = new TextEncoder();
+export let bridgeId = undefined;
+export let obsPort = undefined;
+export let timerId = undefined;
 
-class Connection {
-  constructor(connectionId) {
-    this.connectionId = connectionId;
-    this.relayDataWebsocket = undefined;
-    this.obsWebsocket = undefined;
-    this.status = connectionStatusConnectingToRelay;
-    this.statusUpdateTime = new Date();
-    this.bridgeToRemoteControllerBytes = 0;
-    this.bridgeToObsBytes = 0;
-    this.bitrateToRemoteController = 0;
-    this.bitrateToObs = 0;
-    this.prevBitrateToRemoteControllerBytes = 0;
-    this.prevBitrateToObsBytes = 0;
-  }
+export let obs = undefined;
+export let relay = undefined;
+export let connections = [];
 
-  close() {
-    if (this.relayDataWebsocket != undefined) {
-      this.relayDataWebsocket.close();
-    }
-    if (this.obsWebsocket != undefined) {
-      this.obsWebsocket.close();
-    }
-  }
-
-  setStatus(newStatus) {
-    if (this.status == newStatus) {
-      return;
-    }
-    if (this.isAborted() && newStatus != connectionStatusRateLimitExceeded) {
-      return;
-    }
-    this.status = newStatus;
-    this.statusUpdateTime = new Date();
-    updateConnections();
-  }
-
-  isAborted() {
-    return (
-      this.status == connectionStatusRemoteControllerClosed ||
-      this.status == connectionStatusRemoteControllerError ||
-      this.status == connectionStatusObsClosed ||
-      this.status == connectionStatusObsError ||
-      this.status == connectionStatusRateLimitExceeded
-    );
-  }
-
-  setupRelayDataWebsocket() {
-    this.relayDataWebsocket = new WebSocket(
-      `${wsScheme}://${baseUrl}/bridge/data/${bridgeId}/${this.connectionId}`
-    );
-    this.status = connectionStatusConnectingToRelay;
-    this.relayDataWebsocket.onopen = (event) => {
-      this.setupObsWebsocket();
-    };
-    this.relayDataWebsocket.onerror = (event) => {
-      this.setStatus(connectionStatusRemoteControllerError);
-      this.close();
-    };
-    this.relayDataWebsocket.onclose = (event) => {
-      this.setStatus(connectionStatusRemoteControllerClosed);
-      this.close();
-    };
-    this.relayDataWebsocket.onmessage = async (event) => {
-      if (this.obsWebsocket.readyState == WebSocket.OPEN) {
-        this.bridgeToObsBytes += textEncoder.encode(event.data).length;
-        this.obsWebsocket.send(event.data);
-      }
-    };
-  }
-
-  setupObsWebsocket() {
-    this.obsWebsocket = new WebSocket(`ws://localhost:${obsPort}`);
-    this.setStatus(connectionStatusConnectingToObs);
-    this.obsWebsocket.onopen = (event) => {
-      this.setStatus(connectionStatusConnected);
-    };
-    this.obsWebsocket.onerror = (event) => {
-      this.setStatus(connectionStatusObsError);
-      this.close();
-    };
-    this.obsWebsocket.onclose = (event) => {
-      this.setStatus(connectionStatusObsClosed);
-      this.close();
-    };
-    this.obsWebsocket.onmessage = async (event) => {
-      if (this.relayDataWebsocket.readyState == WebSocket.OPEN) {
-        this.bridgeToRemoteControllerBytes += textEncoder.encode(
-          event.data
-        ).length;
-        this.relayDataWebsocket.send(event.data);
-      }
-    };
-  }
-
-  updateBitrates() {
-    this.bitrateToRemoteController =
-      8 *
-      (this.bridgeToRemoteControllerBytes -
-        this.prevBitrateToRemoteControllerBytes);
-    this.prevBitrateToRemoteControllerBytes =
-      this.bridgeToRemoteControllerBytes;
-    this.bitrateToObs =
-      8 * (this.bridgeToObsBytes - this.prevBitrateToObsBytes);
-    this.prevBitrateToObsBytes = this.bridgeToObsBytes;
-  }
-}
-
-class Relay {
-  constructor() {
-    this.controlWebsocket = undefined;
-    this.status = relayStatusConnecting;
-    this.statusEnabled = false;
-  }
-
-  close() {
-    if (this.controlWebsocket != undefined) {
-      this.controlWebsocket.close();
-      this.controlWebsocket = undefined;
-    }
-  }
-
-  setStatus(newStatus) {
-    if (this.status == newStatus) {
-      return;
-    }
-    this.status = newStatus;
-    updateRelayStatus();
-  }
-
-  sendStatus(status) {
-    if (
-      this.controlWebsocket != undefined &&
-      this.controlWebsocket.readyState == WebSocket.OPEN
-    ) {
-      this.controlWebsocket.send(JSON.stringify(status));
-    }
-  }
-
-  setupControlWebsocket() {
-    this.controlWebsocket = new WebSocket(
-      `${wsScheme}://${baseUrl}/bridge/control/${bridgeId}`
-    );
-    this.setStatus(relayStatusConnecting);
-    this.controlWebsocket.onopen = (event) => {
-      this.setStatus(relayStatusConnected);
-    };
-    this.controlWebsocket.onerror = (event) => {
-      if (this.status != relayStatusKicked) {
-        reset(10000);
-      }
-    };
-    this.controlWebsocket.onclose = (event) => {
-      if (this.status != relayStatusKicked) {
-        reset(10000);
-      }
-    };
-    this.controlWebsocket.onmessage = async (event) => {
-      let message = JSON.parse(event.data);
-      if (message.type == "connect") {
-        let connectionId = message.data.connectionId;
-        let connection = new Connection(connectionId);
-        connection.setupRelayDataWebsocket();
-        connections.unshift(connection);
-        while (connections.length > 5) {
-          connections.pop().close();
-        }
-      } else if (message.type == "startStatus") {
-        this.statusEnabled = true;
-      } else if (message.type == "stopStatus") {
-        this.statusEnabled = false;
-      } else if (message.type == "kicked") {
-        this.setStatus(relayStatusKicked);
-      } else if (message.type == "rateLimitExceeded") {
-        for (const connection of connections) {
-          if (connection.connectionId == message.data.connectionId) {
-            connection.setStatus(connectionStatusRateLimitExceeded);
-          }
-        }
-      }
-    };
-  }
-}
-
-class Obs {
-  constructor() {
-    this.websocket = undefined;
-    this.status = obsStatusConnecting;
-    this.timerId = undefined;
-  }
-
-  setStatus(newStatus) {
-    if (this.status == newStatus) {
-      return;
-    }
-    this.status = newStatus;
-    updateObsStatus();
-  }
-
-  setupWebsocket() {
-    this.websocket = new WebSocket(`ws://localhost:${obsPort}`);
-    this.setStatus(obsStatusConnecting);
-    this.websocket.onopen = (event) => {
-      this.setStatus(obsStatusConnected);
-    };
-    this.websocket.onerror = (event) => {
-      this.setStatus(obsStatusConnecting);
-      this.retry(10000);
-    };
-    this.websocket.onclose = (event) => {
-      this.setStatus(obsStatusConnecting);
-      this.retry(10000);
-    };
-  }
-
-  retry(delayMs) {
-    if (this.timerId != undefined) {
-      clearTimeout(this.timerId);
-    }
-    this.timerId = setTimeout(() => {
-      this.timerId = undefined;
-      this.setupWebsocket();
-    }, delayMs);
-  }
-}
-
-let obs = undefined;
-let relay = undefined;
-let connections = [];
-
-function reset(delayMs) {
+export function reset(delayMs) {
   for (const connection of connections) {
     connection.close();
   }
@@ -410,25 +190,25 @@ function updateStatus() {
   relay.sendStatus(status);
 }
 
-function updateRelayStatus() {
+export function updateRelayStatus() {
   let relayStatus = '<i class="p-icon--error"></i> Unknown server status';
-  if (relay.status == relayStatusConnecting) {
+  if (relay.status == RelayStatus.Connecting) {
     relayStatus =
       '<i class="p-icon--spinner u-animation--spin"></i> Connecting to server';
-  } else if (relay.status == relayStatusConnected) {
+  } else if (relay.status == RelayStatus.Connected) {
     relayStatus = '<i class="p-icon--success"></i> Connected to server';
-  } else if (relay.status == relayStatusKicked) {
+  } else if (relay.status == RelayStatus.Kicked) {
     relayStatus = '<i class="p-icon--error"></i> Kicked by server';
   }
   document.getElementById("relayStatus").innerHTML = relayStatus;
 }
 
-function updateObsStatus() {
+export function updateObsStatus() {
   let obsStatus = '<i class="p-icon--error"></i> Unknown OBS status';
-  if (obs.status == obsStatusConnecting) {
+  if (obs.status == ObsStatus.Connecting) {
     obsStatus =
       '<i class="p-icon--spinner u-animation--spin"></i> Connecting to OBS on this computer (may take up to a minute)';
-  } else if (obs.status == obsStatusConnected) {
+  } else if (obs.status == ObsStatus.Connected) {
     obsStatus =
       '<i class="p-icon--success"></i> Connected to OBS on this computer';
   }
@@ -475,21 +255,39 @@ function loadObsPort(urlParams) {
 }
 
 window.addEventListener("DOMContentLoaded", async (event) => {
-  addOnClick('toggleShowMoblinRemoteControllerMoblinUrl', toggleShowMoblinRemoteControllerMoblinUrl);
-  addOnClick('copyMoblinRemoteControllerUrlToClipboard', copyMoblinRemoteControllerUrlToClipboard);
-  addOnClick('toggleShowMoblinRemoteControllerObsBladeHostname', toggleShowMoblinRemoteControllerObsBladeHostname);
-  addOnClick('copyObsBladeHostnameRemoteControllerUrlToClipboard', copyObsBladeHostnameRemoteControllerUrlToClipboard);
-  addOnClick('toggleShowMoblinRemoteControllerObsBladeHost', toggleShowMoblinRemoteControllerObsBladeHost);
-  addOnClick('copyMoblinRemoteControllerUrlToClipboard', copyMoblinRemoteControllerUrlToClipboard);
-  addOnClick('toggleShowBridgeId', toggleShowBridgeId);
-  addOnClick('saveSettings', saveSettings);
-  addOnClick('toggleShowStatusPageUrl', toggleShowStatusPageUrl);
-  addOnClick('copyStatusPageUrlToClipboard', copyStatusPageUrlToClipboard);
-  addOnClick('resetSettings', resetSettings);
+  addOnClick(
+    "toggleShowMoblinRemoteControllerMoblinUrl",
+    toggleShowMoblinRemoteControllerMoblinUrl
+  );
+  addOnClick(
+    "copyMoblinRemoteControllerUrlToClipboard",
+    copyMoblinRemoteControllerUrlToClipboard
+  );
+  addOnClick(
+    "toggleShowMoblinRemoteControllerObsBladeHostname",
+    toggleShowMoblinRemoteControllerObsBladeHostname
+  );
+  addOnClick(
+    "copyObsBladeHostnameRemoteControllerUrlToClipboard",
+    copyObsBladeHostnameRemoteControllerUrlToClipboard
+  );
+  addOnClick(
+    "toggleShowMoblinRemoteControllerObsBladeHost",
+    toggleShowMoblinRemoteControllerObsBladeHost
+  );
+  addOnClick(
+    "copyMoblinRemoteControllerUrlToClipboard",
+    copyMoblinRemoteControllerUrlToClipboard
+  );
+  addOnClick("toggleShowBridgeId", toggleShowBridgeId);
+  addOnClick("saveSettings", saveSettings);
+  addOnClick("toggleShowStatusPageUrl", toggleShowStatusPageUrl);
+  addOnClick("copyStatusPageUrlToClipboard", copyStatusPageUrlToClipboard);
+  addOnClick("resetSettings", resetSettings);
   const urlParams = new URLSearchParams(window.location.search);
   loadbridgeId(urlParams);
   loadObsPort(urlParams);
-  relay = new Relay();
+  relay = new Relay(connections, RelayStatus.Connecting);
   relay.setupControlWebsocket();
   obs = new Obs();
   obs.setupWebsocket();

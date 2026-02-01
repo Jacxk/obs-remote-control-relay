@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -97,7 +96,6 @@ func (b *Bridge) close(kicked bool) {
 }
 
 var address = flag.String("address", ":8080", "HTTP server address")
-var reverseProxyBase = flag.String("reverse_proxy_base", "", "Reverse proxy base (default: \"\")")
 
 var bridges = xsync.NewMapOf[string, *Bridge]()
 var startTime = time.Now()
@@ -412,13 +410,6 @@ func updateStats() {
 	}
 }
 
-func serveConfigJs(w http.ResponseWriter, _ *http.Request) {
-	logger.Debug("config.mjs requested")
-	configJs := fmt.Sprintf("export const baseUrl = `${window.location.host}%v`;", *reverseProxyBase)
-	w.Header().Add("content-type", "text/javascript")
-	w.Write([]byte(configJs))
-}
-
 func setLogLevel() {
 	level := slog.LevelInfo
 	switch strings.ToUpper(strings.TrimSpace(os.Getenv("LOG_LEVEL"))) {
@@ -436,14 +427,9 @@ func setLogLevel() {
 
 func setVariablesFromEnvironment() {
 	var envAddress = os.Getenv("RELAY_ADDRESS")
-	var envReverseProxyBase = os.Getenv("RELAY_REVERSE_PROXY_BASE")
 
 	if envAddress != "" {
 		address = &envAddress
-	}
-
-	if envReverseProxyBase != "" {
-		reverseProxyBase = &envReverseProxyBase
 	}
 }
 
@@ -453,7 +439,7 @@ func main() {
 	setLogLevel()
 	setVariablesFromEnvironment()
 
-	logger.Info("server starting", "address", *address, "reverse_proxy_base", *reverseProxyBase)
+	logger.Info("server starting", "address", *address)
 	go updateStats()
 	static := http.FileServer(http.Dir("../frontend"))
 	http.Handle("/", static)
@@ -468,9 +454,6 @@ func main() {
 	})
 	http.HandleFunc("/status/{bridgeId}", func(w http.ResponseWriter, r *http.Request) {
 		serveStatus(w, r)
-	})
-	http.HandleFunc("/js/config.mjs", func(w http.ResponseWriter, r *http.Request) {
-		serveConfigJs(w, r)
 	})
 	http.HandleFunc("/stats.json", func(w http.ResponseWriter, r *http.Request) {
 		serveStatsJson(w, r)

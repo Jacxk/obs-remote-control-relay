@@ -1,9 +1,17 @@
-const secure = `${window.location.protocol == "https:" ? "s" : ""}`;
+const secure = window.location.protocol == "https:" ? "s" : "";
 export const wsScheme = `ws${secure}`;
 export const httpScheme = `http${secure}`;
 
+export const baseUrl = window.location.href
+  .replace(/^https?:\/\//, "")
+  .replace(/\/.*?\.html.*$/, "")
+  .replace(/\/$/, "");
+
 export function randomUUID() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -13,20 +21,18 @@ export function randomUUID() {
   });
 }
 
-function numberSuffix(value) {
-  return value == 1 ? "" : "s";
-}
-
 export function timeAgoString(fromDate) {
-  let now = new Date();
-  let secondsAgo = parseInt((now.getTime() - fromDate.getTime()) / 1000);
+  const numberSuffix = (value) => (value == 1 ? "" : "s");
+
+  const now = new Date();
+  const secondsAgo = parseInt((now.getTime() - fromDate.getTime()) / 1000);
   if (secondsAgo < 60) {
     return `${secondsAgo} second${numberSuffix(secondsAgo)} ago`;
   } else if (secondsAgo < 3600) {
-    let minutesAgo = parseInt(secondsAgo / 60);
+    const minutesAgo = parseInt(secondsAgo / 60);
     return `${minutesAgo} minute${numberSuffix(minutesAgo)} ago`;
   } else if (secondsAgo < 86400) {
-    let hoursAgo = parseInt(secondsAgo / 3600);
+    const hoursAgo = parseInt(secondsAgo / 3600);
     return `${hoursAgo} hour${numberSuffix(hoursAgo)} ago`;
   } else {
     return fromDate.toDateString();
@@ -49,19 +55,19 @@ export function bytesToString(bytes) {
   if (bytes < 1000) {
     return `${bytes} B`;
   } else if (bytes < 1000000) {
-    let bytesKb = (bytes / 1000).toFixed(1);
+    const bytesKb = (bytes / 1000).toFixed(1);
     return `${bytesKb} kB`;
   } else if (bytes < 1000000000) {
-    let bytesMb = (bytes / 1000000).toFixed(1);
+    const bytesMb = (bytes / 1000000).toFixed(1);
     return `${bytesMb} MB`;
   } else {
-    let bytesGb = (bytes / 1000000000).toFixed(1);
+    const bytesGb = (bytes / 1000000000).toFixed(1);
     return `${bytesGb} GB`;
   }
 }
 
 export function getTableBody(id) {
-  let table = document.getElementById(id);
+  const table = document.getElementById(id);
   while (table.rows.length > 1) {
     table.deleteRow(-1);
   }
@@ -69,7 +75,7 @@ export function getTableBody(id) {
 }
 
 export function appendToRow(row, value) {
-  let cell = row.insertCell(-1);
+  const cell = row.insertCell(-1);
   cell.innerHTML = value;
 }
 
