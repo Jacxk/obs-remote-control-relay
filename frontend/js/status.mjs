@@ -5,8 +5,8 @@ import {
   appendToRow,
   bitrateToString,
   randomUUID,
+  baseUrl,
 } from "./utils.mjs";
-import { baseUrl } from "./config.mjs";
 
 const connectionStatusConnected = "Connected";
 
