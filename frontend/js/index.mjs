@@ -84,36 +84,6 @@ function copyStatusPageUrlToClipboard() {
   navigator.clipboard.writeText(makeStatusPageUrl());
 }
 
-function toggleShow(inputId, iconId) {
-  let input = document.getElementById(inputId);
-  let icon = document.getElementById(iconId);
-  if (input.type === "password") {
-    input.type = "text";
-    icon.classList.add("p-icon--hide");
-    icon.classList.remove("p-icon--show");
-  } else {
-    input.type = "password";
-    icon.classList.add("p-icon--show");
-    icon.classList.remove("p-icon--hide");
-  }
-}
-
-function toggleShowMoblinRemoteControllerMoblinUrl() {
-  toggleShow("moblinUrl", "moblinUrlIcon");
-}
-
-function toggleShowMoblinRemoteControllerObsBladeHostname() {
-  toggleShow("obsBladeHostname", "obsBladeHostnameIcon");
-}
-
-function toggleShowMoblinRemoteControllerObsBladeHost() {
-  toggleShow("obsBladeHost", "obsBladeHostIcon");
-}
-
-function toggleShowStatusPageUrl() {
-  toggleShow("statusPageUrl", "statusPageUrlIcon");
-}
-
 function populateRemoteControllerSetup() {
   document.getElementById("moblinUrl").value = makeMoblinRemoteControllerUrl();
   document.getElementById("obsBladeHostname").value =
@@ -215,23 +185,6 @@ export function updateObsStatus() {
   document.getElementById("obsStatus").innerHTML = obsStatus;
 }
 
-function toggleShowBridgeId() {
-  let bridgeIdInput = document.getElementById("bridgeId");
-  let bridgeIdText = document.getElementById("bridgeIdText");
-  let bridgeIdIcon = document.getElementById("bridgeIdIcon");
-  if (bridgeIdInput.type === "password") {
-    bridgeIdInput.type = "text";
-    bridgeIdText.innerText = "Hide";
-    bridgeIdIcon.classList.add("p-icon--hide");
-    bridgeIdIcon.classList.remove("p-icon--show");
-  } else {
-    bridgeIdInput.type = "password";
-    bridgeIdText.innerText = "Show";
-    bridgeIdIcon.classList.add("p-icon--show");
-    bridgeIdIcon.classList.remove("p-icon--hide");
-  }
-}
-
 function loadbridgeId(urlParams) {
   bridgeId = urlParams.get("bridgeId");
   if (bridgeId == undefined) {
@@ -256,32 +209,20 @@ function loadObsPort(urlParams) {
 
 window.addEventListener("DOMContentLoaded", async (event) => {
   addOnClick(
-    "toggleShowMoblinRemoteControllerMoblinUrl",
-    toggleShowMoblinRemoteControllerMoblinUrl
-  );
-  addOnClick(
     "copyMoblinRemoteControllerUrlToClipboard",
     copyMoblinRemoteControllerUrlToClipboard
   );
-  addOnClick(
-    "toggleShowMoblinRemoteControllerObsBladeHostname",
-    toggleShowMoblinRemoteControllerObsBladeHostname
-  );
+
   addOnClick(
     "copyObsBladeHostnameRemoteControllerUrlToClipboard",
     copyObsBladeHostnameRemoteControllerUrlToClipboard
   );
-  addOnClick(
-    "toggleShowMoblinRemoteControllerObsBladeHost",
-    toggleShowMoblinRemoteControllerObsBladeHost
-  );
+
   addOnClick(
     "copyMoblinRemoteControllerUrlToClipboard",
     copyMoblinRemoteControllerUrlToClipboard
   );
-  addOnClick("toggleShowBridgeId", toggleShowBridgeId);
   addOnClick("saveSettings", saveSettings);
-  addOnClick("toggleShowStatusPageUrl", toggleShowStatusPageUrl);
   addOnClick("copyStatusPageUrlToClipboard", copyStatusPageUrlToClipboard);
   addOnClick("resetSettings", resetSettings);
   const urlParams = new URLSearchParams(window.location.search);
@@ -304,4 +245,28 @@ window.addEventListener("DOMContentLoaded", async (event) => {
     updateConnections();
     updateStatus();
   }, 1000);
+
+});
+
+document.querySelectorAll("[data-toggle-show]").forEach((element) => {
+  element.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentTarget = event.currentTarget;
+    const inputId = currentTarget.getAttribute("aria-controls");
+    
+    const icon = currentTarget.querySelector("i");
+    const input = document.getElementById(inputId);
+
+    if (input.type === "password") {
+      input.type = "text";
+      icon.classList.add("p-icon--hide");
+      icon.classList.remove("p-icon--show");
+    } else {
+      input.type = "password";
+      icon.classList.add("p-icon--show");
+      icon.classList.remove("p-icon--hide");
+    }
+  });
 });

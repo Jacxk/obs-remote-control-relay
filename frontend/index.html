@@ -73,9 +73,9 @@
               class="p-button--base u-no-margin--right"
               aria-live="polite"
               aria-controls="moblinUrl"
-              id="toggleShowMoblinRemoteControllerMoblinUrl"
+              data-toggle-show
             >
-              <i id="moblinUrlIcon" class="p-icon--show"></i>
+              <i class="p-icon--show"></i>
             </button>
             <button id="copyMoblinRemoteControllerUrlToClipboard">
               Copy
@@ -93,9 +93,9 @@
               class="p-button--base u-no-margin--right"
               aria-live="polite"
               aria-controls="obsBladeHostname"
-              id="toggleShowMoblinRemoteControllerObsBladeHostname"
+              data-toggle-show
             >
-              <i id="obsBladeHostnameIcon" class="p-icon--show"></i>
+              <i class="p-icon--show"></i>
             </button>
             <button id="copyObsBladeHostnameRemoteControllerUrlToClipboard">
               Copy
@@ -112,9 +112,9 @@
               class="p-button--base u-no-margin--right"
               aria-live="polite"
               aria-controls="obsBladeHost"
-              id="toggleShowMoblinRemoteControllerObsBladeHost"
+              data-toggle-show
             >
-              <i id="obsBladeHostIcon" class="p-icon--show"></i>
+              <i class="p-icon--show"></i>
             </button>
             <button id="copyMoblinRemoteControllerUrlToClipboard">
               Copy
@@ -141,23 +141,21 @@
       <div class="col-8">
         <div class="p-card">
           <h2>Settings</h2>
-          <p>OBS WebSocket Server port</p>
+          <label for="obsPort">OBS WebSocket Server port</label>
           <input type="text" name="obsPort" id="obsPort" />
-          <div class="p-form-password-toggle">
-            <label for="bridgeId">Bridge id</label>
+          
+          <label for="bridgeId">Bridge id</label>
+          <div style="display: flex">
+            <input type="password" name="bridgeId" id="bridgeId" />
             <button
-              class="p-button--base u-no-margin--bottom has-icon"
+              class="p-button--base u-no-margin--right"
               aria-live="polite"
               aria-controls="bridgeId"
-              id="toggleShowBridgeId"
+              data-toggle-show
             >
-              <span id="bridgeIdText" class="p-form-password-toggle__label">
-                Show
-              </span>
-              <i id="bridgeIdIcon" class="p-icon--show"></i>
+              <i class="p-icon--show"></i>
             </button>
           </div>
-          <input type="password" name="bridgeId" id="bridgeId" />
           <button id="saveSettings">Save</button>
         </div>
       </div>
@@ -176,9 +174,9 @@
               class="p-button--base u-no-margin--right"
               aria-live="polite"
               aria-controls="statusPageUrl"
-              id="toggleShowStatusPageUrl"
+              data-toggle-show
             >
-              <i id="statusPageUrlIcon" class="p-icon--show"></i>
+              <i class="p-icon--show"></i>
             </button>
             <button id="copyStatusPageUrlToClipboard">
               Copy
