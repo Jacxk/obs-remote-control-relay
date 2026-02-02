@@ -31,7 +31,7 @@ export default class Obs {
     };
   }
 
-  retry(delayMs) {
+  retry(delayMs = 0) {
     if (this.timerId != undefined) {
       clearTimeout(this.timerId);
     }

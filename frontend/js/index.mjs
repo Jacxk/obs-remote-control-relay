@@ -36,15 +36,16 @@ export const ConnectionStatus = {
 
 const defaultObsPort = "4455";
 
-export let bridgeId = undefined;
-export let obsPort = undefined;
-export let timerId = undefined;
+export let bridgeId;
+export let obsPort;
 
-export let obs = undefined;
-export let relay = undefined;
 export let connections = [];
+export let obs = new Obs();
+export let relay = new Relay(connections, RelayStatus.Connecting);
 
-export function reset(delayMs) {
+let timerId;
+
+export function reset(delayMs = 0) {
   for (const connection of connections) {
     connection.close();
   }
@@ -60,24 +61,13 @@ export function reset(delayMs) {
   }, delayMs);
 }
 
-function makeMoblinRemoteControllerUrl() {
-  return `${wsScheme}://${baseUrl}/remote-controller/${bridgeId}`;
-}
-
-function makeObsBladeHostnameRemoteControllerUrl() {
-  return `${baseUrl}/remote-controller/${bridgeId}`;
-}
-
-function makeStatusPageUrl() {
-  return `${httpScheme}://${baseUrl}/status.html?bridgeId=${bridgeId}`;
-}
-
 function populateRemoteControllerSetup() {
-  document.getElementById("moblinUrl").value = makeMoblinRemoteControllerUrl();
-  document.getElementById("obsBladeHostname").value =
-    makeObsBladeHostnameRemoteControllerUrl();
-  document.getElementById("obsBladeHost").value =
-    makeMoblinRemoteControllerUrl();
+  const url = `${wsScheme}://${baseUrl}/remote-controller/${bridgeId}`;
+  const obsBladeHostname = `${baseUrl}/remote-controller/${bridgeId}`;
+
+  document.getElementById("moblinUrl").value = url;
+  document.getElementById("obsBladeHost").value = url;
+  document.getElementById("obsBladeHostname").value = obsBladeHostname;
 }
 
 function populateSettings() {
@@ -86,30 +76,37 @@ function populateSettings() {
 }
 
 function populateStatusPage() {
-  document.getElementById("statusPageUrl").value = makeStatusPageUrl();
+  const statusPageUrl = `${httpScheme}://${baseUrl}/status.html?bridgeId=${bridgeId}`;
+  document.getElementById("statusPageUrl").value = statusPageUrl;
 }
 
 function saveSettings() {
   obsPort = document.getElementById("obsPort").value;
-  localStorage.setItem("obsPort", obsPort);
   bridgeId = document.getElementById("bridgeId").value;
+
+  localStorage.setItem("obsPort", obsPort);
   localStorage.setItem("bridgeId", bridgeId);
+
   populateRemoteControllerSetup();
   populateStatusPage();
-  reset(0);
-  obs.retry(0);
+  reset();
+
+  obs.retry();
 }
 
 function resetSettings() {
   bridgeId = randomUUID();
   localStorage.setItem("bridgeId", bridgeId);
+
   obsPort = defaultObsPort;
   localStorage.setItem("obsPort", obsPort);
+
   populateRemoteControllerSetup();
   populateSettings();
   populateStatusPage();
-  reset(0);
-  obs.retry(0);
+  reset();
+
+  obs.retry();
 }
 
 function updateConnections() {
@@ -197,26 +194,23 @@ function loadObsPort(urlParams) {
 
 window.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
-  
+
   addOnClick("saveSettings", saveSettings);
   addOnClick("resetSettings", resetSettings);
-  
+
   loadbridgeId(urlParams);
   loadObsPort(urlParams);
-  
-  relay = new Relay(connections, RelayStatus.Connecting);
+
   relay.setupControlWebsocket();
-  
-  obs = new Obs();
   obs.setupWebsocket();
-  
+
   populateRemoteControllerSetup();
   populateSettings();
   populateStatusPage();
   updateConnections();
   updateRelayStatus();
   updateObsStatus();
-  
+
   setInterval(() => {
     for (const connection of connections) {
       connection.updateBitrates();
@@ -224,7 +218,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     updateConnections();
     updateStatus();
   }, 1000);
-
 });
 
 document.querySelectorAll("[data-toggle-show]").forEach((element) => {
@@ -234,7 +227,7 @@ document.querySelectorAll("[data-toggle-show]").forEach((element) => {
 
     const currentTarget = event.currentTarget;
     const inputId = currentTarget.getAttribute("aria-controls");
-    
+
     const icon = currentTarget.querySelector("i");
     const input = document.getElementById(inputId);
 
