@@ -1,4 +1,4 @@
-import { ConnectionStatus } from "../index.mjs";
+import { ConnectionStatus, bridgeId, obsPort, updateConnections } from "../index.mjs";
 import { baseUrl, wsScheme } from "../utils.mjs";
 
 export default class Connection {

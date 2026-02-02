@@ -109,12 +109,12 @@ function resetSettings() {
   obs.retry();
 }
 
-function updateConnections() {
+export function updateConnections() {
   let body = getTableBody("connections");
   for (const connection of connections) {
     let row = body.insertRow(-1);
     let statusWithIcon = `<i class="p-icon--spinner u-animation--spin"></i> ${connection.status}`;
-    if (connection.status == connectionStatusConnected) {
+    if (connection.status == ConnectionStatus.Connected) {
       statusWithIcon = `<i class="p-icon--success"></i> ${connection.status}`;
     } else if (connection.isAborted()) {
       statusWithIcon = `<i class="p-icon--error"></i> ${connection.status}`;

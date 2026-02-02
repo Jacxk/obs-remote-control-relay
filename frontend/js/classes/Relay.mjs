@@ -64,9 +64,9 @@ export default class Relay {
         let connectionId = message.data.connectionId;
         let connection = new Connection(connectionId);
         connection.setupRelayDataWebsocket();
-        connections.unshift(connection);
-        while (connections.length > 5) {
-          connections.pop().close();
+        this.connections.unshift(connection);
+        while (this.connections.length > 5) {
+          this.connections.pop().close();
         }
       } else if (message.type == "startStatus") {
         this.statusEnabled = true;
@@ -75,7 +75,7 @@ export default class Relay {
       } else if (message.type == "kicked") {
         this.setStatus(RelayStatus.Kicked);
       } else if (message.type == "rateLimitExceeded") {
-        for (const connection of connections) {
+        for (const connection of this.connections) {
           if (connection.connectionId == message.data.connectionId) {
             connection.setStatus(ConnectionStatus.RateLimitExceeded);
           }
