@@ -1,6 +1,8 @@
 name: Create and publish a Docker image
 
 on:
+  release:
+    types: [created]
   push:
     branches: ['dev']
   workflow_dispatch:
@@ -32,6 +34,9 @@ jobs:
         uses: docker/metadata-action@v5.10.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=sha,prefix=
 
       - name: Build and push Docker image
         id: push
