@@ -68,20 +68,8 @@ function makeObsBladeHostnameRemoteControllerUrl() {
   return `${baseUrl}/remote-controller/${bridgeId}`;
 }
 
-function copyMoblinRemoteControllerUrlToClipboard() {
-  navigator.clipboard.writeText(makeMoblinRemoteControllerUrl());
-}
-
-function copyObsBladeHostnameRemoteControllerUrlToClipboard() {
-  navigator.clipboard.writeText(makeObsBladeHostnameRemoteControllerUrl());
-}
-
 function makeStatusPageUrl() {
   return `${httpScheme}://${baseUrl}/status.html?bridgeId=${bridgeId}`;
-}
-
-function copyStatusPageUrlToClipboard() {
-  navigator.clipboard.writeText(makeStatusPageUrl());
 }
 
 function populateRemoteControllerSetup() {
@@ -207,37 +195,28 @@ function loadObsPort(urlParams) {
   localStorage.setItem("obsPort", obsPort);
 }
 
-window.addEventListener("DOMContentLoaded", async (event) => {
-  addOnClick(
-    "copyMoblinRemoteControllerUrlToClipboard",
-    copyMoblinRemoteControllerUrlToClipboard
-  );
-
-  addOnClick(
-    "copyObsBladeHostnameRemoteControllerUrlToClipboard",
-    copyObsBladeHostnameRemoteControllerUrlToClipboard
-  );
-
-  addOnClick(
-    "copyMoblinRemoteControllerUrlToClipboard",
-    copyMoblinRemoteControllerUrlToClipboard
-  );
-  addOnClick("saveSettings", saveSettings);
-  addOnClick("copyStatusPageUrlToClipboard", copyStatusPageUrlToClipboard);
-  addOnClick("resetSettings", resetSettings);
+window.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
+  
+  addOnClick("saveSettings", saveSettings);
+  addOnClick("resetSettings", resetSettings);
+  
   loadbridgeId(urlParams);
   loadObsPort(urlParams);
+  
   relay = new Relay(connections, RelayStatus.Connecting);
   relay.setupControlWebsocket();
+  
   obs = new Obs();
   obs.setupWebsocket();
+  
   populateRemoteControllerSetup();
   populateSettings();
   populateStatusPage();
   updateConnections();
   updateRelayStatus();
   updateObsStatus();
+  
   setInterval(() => {
     for (const connection of connections) {
       connection.updateBitrates();
@@ -268,5 +247,23 @@ document.querySelectorAll("[data-toggle-show]").forEach((element) => {
       icon.classList.add("p-icon--show");
       icon.classList.remove("p-icon--hide");
     }
+  });
+});
+
+document.querySelectorAll("[data-copy-to-clipboard]").forEach((element) => {
+  element.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentTarget = event.currentTarget;
+    const inputId = currentTarget.getAttribute("data-copy-to-clipboard");
+    const input = document.getElementById(inputId);
+
+    await navigator.clipboard.writeText(input.value);
+
+    currentTarget.innerHTML = "Copied";
+    setTimeout(() => {
+      currentTarget.innerHTML = "Copy";
+    }, 2000);
   });
 });
