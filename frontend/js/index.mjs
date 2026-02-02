@@ -52,7 +52,7 @@ export function reset(delayMs = 0) {
   connections = [];
   relay.close();
   relay = new Relay();
-  if (timerId != undefined) {
+  if (timerId !== undefined) {
     clearTimeout(timerId);
   }
   timerId = setTimeout(() => {
@@ -110,11 +110,11 @@ function resetSettings() {
 }
 
 export function updateConnections() {
-  let body = getTableBody("connections");
+  const body = getTableBody("connections");
   for (const connection of connections) {
-    let row = body.insertRow(-1);
-    let statusWithIcon = `<i class="p-icon--spinner u-animation--spin"></i> ${connection.status}`;
-    if (connection.status == ConnectionStatus.Connected) {
+    const row = body.insertRow(-1);
+    const statusWithIcon = `<i class="p-icon--spinner u-animation--spin"></i> ${connection.status}`;
+    if (connection.status === ConnectionStatus.Connected) {
       statusWithIcon = `<i class="p-icon--success"></i> ${connection.status}`;
     } else if (connection.isAborted()) {
       statusWithIcon = `<i class="p-icon--error"></i> ${connection.status}`;
@@ -130,7 +130,7 @@ function updateStatus() {
   if (!relay.statusEnabled) {
     return;
   }
-  let status = {
+  const status = {
     connections: [],
   };
   for (const connection of connections) {
@@ -147,12 +147,12 @@ function updateStatus() {
 
 export function updateRelayStatus() {
   let relayStatus = '<i class="p-icon--error"></i> Unknown server status';
-  if (relay.status == RelayStatus.Connecting) {
+  if (relay.status === RelayStatus.Connecting) {
     relayStatus =
       '<i class="p-icon--spinner u-animation--spin"></i> Connecting to server';
-  } else if (relay.status == RelayStatus.Connected) {
+  } else if (relay.status === RelayStatus.Connected) {
     relayStatus = '<i class="p-icon--success"></i> Connected to server';
-  } else if (relay.status == RelayStatus.Kicked) {
+  } else if (relay.status === RelayStatus.Kicked) {
     relayStatus = '<i class="p-icon--error"></i> Kicked by server';
   }
   document.getElementById("relayStatus").innerHTML = relayStatus;
@@ -160,10 +160,10 @@ export function updateRelayStatus() {
 
 export function updateObsStatus() {
   let obsStatus = '<i class="p-icon--error"></i> Unknown OBS status';
-  if (obs.status == ObsStatus.Connecting) {
+  if (obs.status === ObsStatus.Connecting) {
     obsStatus =
       '<i class="p-icon--spinner u-animation--spin"></i> Connecting to OBS on this computer (may take up to a minute)';
-  } else if (obs.status == ObsStatus.Connected) {
+  } else if (obs.status === ObsStatus.Connected) {
     obsStatus =
       '<i class="p-icon--success"></i> Connected to OBS on this computer';
   }
@@ -172,10 +172,10 @@ export function updateObsStatus() {
 
 function loadbridgeId(urlParams) {
   bridgeId = urlParams.get("bridgeId");
-  if (bridgeId == undefined) {
+  if (!bridgeId) {
     bridgeId = localStorage.getItem("bridgeId");
   }
-  if (bridgeId == undefined) {
+  if (!bridgeId) {
     bridgeId = randomUUID();
   }
   localStorage.setItem("bridgeId", bridgeId);
@@ -183,10 +183,10 @@ function loadbridgeId(urlParams) {
 
 function loadObsPort(urlParams) {
   obsPort = urlParams.get("obsPort");
-  if (obsPort == undefined) {
+  if (!obsPort) {
     obsPort = localStorage.getItem("obsPort");
   }
-  if (obsPort == undefined) {
+  if (!obsPort) {
     obsPort = defaultObsPort;
   }
   localStorage.setItem("obsPort", obsPort);

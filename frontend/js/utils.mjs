@@ -1,4 +1,4 @@
-const secure = window.location.protocol == "https:" ? "s" : "";
+const secure = window.location.protocol === "https:" ? "s" : "";
 export const wsScheme = `ws${secure}`;
 export const httpScheme = `http${secure}`;
 
@@ -22,7 +22,7 @@ export function randomUUID() {
 }
 
 export function timeAgoString(fromDate) {
-  const numberSuffix = (value) => (value == 1 ? "" : "s");
+  const numberSuffix = (value) => (value === 1 ? "" : "s");
 
   const now = new Date();
   const secondsAgo = parseInt((now.getTime() - fromDate.getTime()) / 1000);
@@ -43,10 +43,10 @@ export function bitrateToString(bitrate) {
   if (bitrate < 1000) {
     return `${bitrate} bps`;
   } else if (bitrate < 1000000) {
-    let bitrateKbps = (bitrate / 1000).toFixed(1);
+    const bitrateKbps = (bitrate / 1000).toFixed(1);
     return `${bitrateKbps} kbps`;
   } else {
-    let bitrateMbps = (bitrate / 1000000).toFixed(1);
+    const bitrateMbps = (bitrate / 1000000).toFixed(1);
     return `${bitrateMbps} Mbps`;
   }
 }

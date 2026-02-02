@@ -3,12 +3,12 @@ import { obsPort, ObsStatus, updateObsStatus } from "../index.mjs";
 export default class Obs {
   constructor(initialStatus = ObsStatus.Connecting) {
     this.status = initialStatus;
-    this.websocket = undefined;
-    this.timerId = undefined;
+    this.websocket;
+    this.timerId;
   }
 
   setStatus(newStatus) {
-    if (this.status == newStatus) {
+    if (this.status === newStatus) {
       return;
     }
     this.status = newStatus;
@@ -32,7 +32,7 @@ export default class Obs {
   }
 
   retry(delayMs = 0) {
-    if (this.timerId != undefined) {
+    if (this.timerId) {
       clearTimeout(this.timerId);
     }
     this.timerId = setTimeout(() => {

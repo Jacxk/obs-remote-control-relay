@@ -1,13 +1,13 @@
 import {
-  timeAgoString,
-  getTableBody,
   appendToRow,
   bitrateToString,
   bytesToString,
+  getTableBody,
+  timeAgoString,
 } from "./utils.mjs";
 
 function appendRow(body, group, name, value) {
-  let row = body.insertRow(-1);
+  const row = body.insertRow(-1);
   appendToRow(row, `${group} / ${name}`);
   appendToRow(row, value);
 }
@@ -77,12 +77,13 @@ function updateStatsTrafficRemoteControllersToBridges(body, stats) {
 }
 
 async function updateStats() {
-  let response = await fetch("stats.json");
+  const response = await fetch("stats.json");
   if (!response.ok) {
     return;
   }
   const stats = await response.json();
-  let body = getTableBody("statistics");
+  const body = getTableBody("statistics");
+
   updateStatsGeneral(body, stats);
   updateStatsBridges(body, stats);
   updateStatsRemoteControllers(body, stats);

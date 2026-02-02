@@ -8,23 +8,31 @@ import {
 import { baseUrl, wsScheme } from "../utils.mjs";
 import Connection from "./Connection.mjs";
 
+const ControlMessageType = {
+  Connect: "connect",
+  StartStatus: "startStatus",
+  StopStatus: "stopStatus",
+  Kicked: "kicked",
+  RateLimitExceeded: "rateLimitExceeded",
+};
+
 export default class Relay {
   constructor(connections, initialStatus = RelayStatus.Connecting) {
-    this.controlWebsocket = undefined;
+    this.controlWebsocket;
     this.statusEnabled = false;
     this.status = initialStatus;
     this.connections = connections;
   }
 
   close() {
-    if (this.controlWebsocket != undefined) {
+    if (this.controlWebsocket) {
       this.controlWebsocket.close();
       this.controlWebsocket = undefined;
     }
   }
 
   setStatus(newStatus) {
-    if (this.status == newStatus) {
+    if (this.status === newStatus) {
       return;
     }
     this.status = newStatus;
@@ -33,8 +41,8 @@ export default class Relay {
 
   sendStatus(status) {
     if (
-      this.controlWebsocket != undefined &&
-      this.controlWebsocket.readyState == WebSocket.OPEN
+      this.controlWebsocket &&
+      this.controlWebsocket.readyState === WebSocket.OPEN
     ) {
       this.controlWebsocket.send(JSON.stringify(status));
     }
@@ -49,37 +57,45 @@ export default class Relay {
       this.setStatus(RelayStatus.Connected);
     };
     this.controlWebsocket.onerror = () => {
-      if (this.status != RelayStatus.Kicked) {
+      if (this.status !== RelayStatus.Kicked) {
         reset(10000);
       }
     };
     this.controlWebsocket.onclose = () => {
-      if (this.status != RelayStatus.Kicked) {
+      if (this.status !== RelayStatus.Kicked) {
         reset(10000);
       }
     };
     this.controlWebsocket.onmessage = async (event) => {
-      let message = JSON.parse(event.data);
-      if (message.type == "connect") {
-        let connectionId = message.data.connectionId;
-        let connection = new Connection(connectionId);
-        connection.setupRelayDataWebsocket();
-        this.connections.unshift(connection);
-        while (this.connections.length > 5) {
-          this.connections.pop().close();
-        }
-      } else if (message.type == "startStatus") {
-        this.statusEnabled = true;
-      } else if (message.type == "stopStatus") {
-        this.statusEnabled = false;
-      } else if (message.type == "kicked") {
-        this.setStatus(RelayStatus.Kicked);
-      } else if (message.type == "rateLimitExceeded") {
-        for (const connection of this.connections) {
-          if (connection.connectionId == message.data.connectionId) {
-            connection.setStatus(ConnectionStatus.RateLimitExceeded);
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case ControlMessageType.Connect:
+          {
+            const connectionId = message.data.connectionId;
+            const connection = new Connection(connectionId);
+            connection.setupRelayDataWebsocket();
+            this.connections.unshift(connection);
+            while (this.connections.length > 5) {
+              this.connections.pop().close();
+            }
           }
-        }
+          break;
+        case ControlMessageType.StartStatus:
+          this.statusEnabled = true;
+          break;
+        case ControlMessageType.StopStatus:
+          this.statusEnabled = false;
+          break;
+        case ControlMessageType.Kicked:
+          this.setStatus(RelayStatus.Kicked);
+          break;
+        case ControlMessageType.RateLimitExceeded:
+          for (const connection of this.connections) {
+            if (connection.connectionId === message.data.connectionId) {
+              connection.setStatus(ConnectionStatus.RateLimitExceeded);
+            }
+          }
+          break;
       }
     };
   }

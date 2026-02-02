@@ -1,25 +1,27 @@
 import {
-  wsScheme,
-  timeAgoString,
-  getTableBody,
   appendToRow,
-  bitrateToString,
-  randomUUID,
   baseUrl,
+  bitrateToString,
+  getTableBody,
+  randomUUID,
+  timeAgoString,
+  wsScheme,
 } from "./utils.mjs";
 
-const connectionStatusConnected = "Connected";
+const ConnectionStatus = {
+  Connected: "Connected"
+};
 
-let bridgeId = undefined;
-let timerId = undefined;
+let bridgeId;
+let timerId;
 
 class Relay {
   constructor() {
-    this.websocket = undefined;
+    this.websocket;
   }
 
   close() {
-    if (this.websocket != undefined) {
+    if (this.websocket) {
       this.websocket.close();
       this.websocket = undefined;
     }
@@ -29,29 +31,31 @@ class Relay {
     this.websocket = new WebSocket(
       `${wsScheme}://${baseUrl}/status/${bridgeId}`
     );
-    this.websocket.onerror = (event) => {
+    this.websocket.onerror = () => {
       updateConnections([]);
-      reset(10000);
+      reset(5000);
     };
-    this.websocket.onclose = (event) => {
+    this.websocket.onclose = () => {
       updateConnections([]);
-      reset(10000);
+      reset(5000);
     };
-    this.websocket.onmessage = async (event) => {
-      let message = JSON.parse(event.data);
+    this.websocket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
       updateConnections(message.connections);
     };
   }
 }
 
-let relay = undefined;
+let relay;
 
 function reset(delayMs) {
   relay.close();
   relay = new Relay();
-  if (timerId != undefined) {
+
+  if (timerId) {
     clearTimeout(timerId);
   }
+
   timerId = setTimeout(() => {
     timerId = undefined;
     relay.setupWebsocket();
@@ -59,15 +63,18 @@ function reset(delayMs) {
 }
 
 function updateConnections(connections) {
-  let body = getTableBody("connections");
+  const body = getTableBody("connections");
+
   for (const connection of connections) {
-    let row = body.insertRow(-1);
-    let statusWithIcon = `<i class="p-icon--spinner u-animation--spin"></i> ${connection.status}`;
-    if (connection.status == connectionStatusConnected) {
+    const row = body.insertRow(-1);
+    const statusWithIcon = `<i class="p-icon--spinner u-animation--spin"></i> ${connection.status}`;
+
+    if (connection.status === ConnectionStatus.Connected) {
       statusWithIcon = `<i class="p-icon--success"></i> ${connection.status}`;
     } else if (connection.aborted) {
       statusWithIcon = `<i class="p-icon--error"></i> ${connection.status}`;
     }
+
     appendToRow(row, statusWithIcon);
     appendToRow(row, timeAgoString(new Date(connection.statusUpdateTime)));
     appendToRow(row, bitrateToString(connection.bitrateToRemoteController));
@@ -77,7 +84,7 @@ function updateConnections(connections) {
 
 function loadbridgeId(urlParams) {
   bridgeId = urlParams.get("bridgeId");
-  if (bridgeId == undefined) {
+  if (bridgeId === undefined) {
     bridgeId = randomUUID();
   }
 }
@@ -85,6 +92,7 @@ function loadbridgeId(urlParams) {
 window.addEventListener("DOMContentLoaded", async (event) => {
   const urlParams = new URLSearchParams(window.location.search);
   loadbridgeId(urlParams);
+
   relay = new Relay();
   relay.setupWebsocket();
 });

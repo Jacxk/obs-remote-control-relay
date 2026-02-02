@@ -3,9 +3,9 @@ import { baseUrl, wsScheme } from "../utils.mjs";
 
 export default class Connection {
   constructor(connectionId) {
+    this.relayDataWebsocket;
+    this.obsWebsocket;
     this.connectionId = connectionId;
-    this.relayDataWebsocket = undefined;
-    this.obsWebsocket = undefined;
     this.status = ConnectionStatus.ConnectingToRelay;
     this.statusUpdateTime = new Date();
     this.bridgeToRemoteControllerBytes = 0;
@@ -18,19 +18,19 @@ export default class Connection {
   }
 
   close() {
-    if (this.relayDataWebsocket != undefined) {
+    if (this.relayDataWebsocket) {
       this.relayDataWebsocket.close();
     }
-    if (this.obsWebsocket != undefined) {
+    if (this.obsWebsocket) {
       this.obsWebsocket.close();
     }
   }
 
   setStatus(newStatus) {
-    if (this.status == newStatus) {
+    if (this.status === newStatus) {
       return;
     }
-    if (this.isAborted() && newStatus != ConnectionStatus.RateLimitExceeded) {
+    if (this.isAborted() && newStatus !== ConnectionStatus.RateLimitExceeded) {
       return;
     }
     this.status = newStatus;
@@ -65,7 +65,7 @@ export default class Connection {
       this.close();
     };
     this.relayDataWebsocket.onmessage = async (event) => {
-      if (this.obsWebsocket.readyState == WebSocket.OPEN) {
+      if (this.obsWebsocket.readyState === WebSocket.OPEN) {
         this.bridgeToObsBytes += this.textEncoder.encode(event.data).length;
         this.obsWebsocket.send(event.data);
       }
@@ -87,7 +87,7 @@ export default class Connection {
       this.close();
     };
     this.obsWebsocket.onmessage = async (event) => {
-      if (this.relayDataWebsocket.readyState == WebSocket.OPEN) {
+      if (this.relayDataWebsocket.readyState === WebSocket.OPEN) {
         this.bridgeToRemoteControllerBytes += this.textEncoder.encode(
           event.data
         ).length;
